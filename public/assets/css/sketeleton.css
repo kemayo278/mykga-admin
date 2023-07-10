@@ -1,0 +1,75 @@
+.loader {
+    background-color: #ededed;
+    height: 18px;
+    border-radius: 7px;
+    width: 100%;
+}
+.td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+td .loader {
+    background-color: #ededed;
+    background: linear-gradient(100deg,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, .5) 50%,
+    rgba(255, 255, 255, 0) 60%) #ededed;
+    background-size: 200% 100%;
+    background-position-x: 180%;
+    animation: 1s loading ease-in-out infinite;
+}
+@keyframes loading {
+    to {
+        background-position-x: -30%;
+    }
+}
+
+.bg-grey-200{
+    background-color: #ffffff;
+}
+
+.vertical-align-middle{
+    vertical-align: middle;
+}
+
+.float-right{
+    float: right;
+}
+.w-80{
+    width: 80px;
+}
+.p-5{
+    padding: 5px;
+}
+.border-top-left-radius-5{
+    border-top-left-radius: 5px;
+}
+.border-bottom-left-radius-5{
+    border-bottom-left-radius: 5px;
+}
+.border-top-right-radius-5{
+    border-top-right-radius:5px ;
+}
+.border-bottom-right-radius-5{
+    border-bottom-right-radius:5px ;
+}
+.text-size-17{
+    font-size: 17px;
+}
+.bg-cfcfcf{
+    background-color: #cfcfcf;
+}
+.cursor-pointer{
+    cursor: pointer;
+}
+.padding-10{
+    padding: 10px;
+}
+
+.w-50{
+    width: 50px;
+}
+
+.h-50{
+    width: 50px;
+}
