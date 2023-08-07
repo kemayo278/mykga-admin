@@ -1,12 +1,52 @@
-import React, { useContext, useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { db } from "../firebase-config";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function SideBar() {
   const location = useLocation();
 
+  const {currentUser} = useContext(AuthContext);
+
+  const [loadingiconuser,setLoadingIconUser] = useState(false);
+
+  const [currentuser,setCurrentUser] = useState({});
+
+  const navigate = useNavigate();
+
   const isActiveMenuItem = (paths) => {
     return paths.some((path) => location.pathname.includes(path));
   };
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+        const docRef = doc(db , "users", currentUser.uid);
+        const snapshot = await getDoc(docRef);
+        setLoadingIconUser(true);
+        if(snapshot.exists()){
+          let currentuserData = snapshot.data();
+          let currentuserFulname = currentuserData.user_fulname;
+          let currentuserImg = currentuserData.user_img;
+          if (currentuserFulname.length > 10 ) {
+            currentuserFulname = currentuserFulname.substr(0, 11);
+          }
+          if(!currentuserImg || currentuserImg === ""){
+            let fileurl = "https://kokitechgroup.cm/iconuser.png";
+            currentuserImg = fileurl;
+          }
+          setCurrentUser({currentuserImg : currentuserImg,currentuserFulname : currentuserFulname ,...currentuserData});
+          setLoadingIconUser(false);
+        }
+        else{
+          console.log("ce document n'existe pas");
+          navigate("/");
+        }
+    }; 
+
+    currentUser.uid && fetchCurrentUser()
+  }, [currentUser.uid]);
+
 
   return (
     <aside id="sidebar" class="sidebar">
@@ -46,24 +86,28 @@ export default function SideBar() {
             }`}
             data-bs-parent="#sidebar-nav"
           >
-            <li>
-              <Link
-                className={isActiveMenuItem(["/Categories","/Add-Category","/Update-Category"]) ? "active" : ""}
-                to="/Categories"
-              >
-                <i class="bi bi-circle"></i>
-                <span>Categories</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                className={isActiveMenuItem(["/Trainings","/Add-Training","/View-Training","/Update-Training"]) ? "active" : ""}
-                to="/Trainings"
-              >
-                <i class="bi bi-circle"></i>
-                <span>Trainings</span>
-              </Link>
-            </li>
+            { currentuser.user_type == "Admin" ?
+            <>
+              <li>
+                <Link
+                  className={isActiveMenuItem(["/Categories","/Add-Category","/Update-Category"]) ? "active" : ""}
+                  to="/Categories"
+                >
+                  <i class="bi bi-circle"></i>
+                  <span>Categories</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={isActiveMenuItem(["/Trainings","/Add-Training","/View-Training","/Update-Training"]) ? "active" : ""}
+                  to="/Trainings"
+                >
+                  <i class="bi bi-circle"></i>
+                  <span>Trainings</span>
+                </Link>
+              </li>
+            </>
+            : "" }
             <li>
               <Link
                 className={isActiveMenuItem(["/Modules","/Add-Module","/Update-Module","/View-Module"]) ? "active" : ""}
@@ -78,7 +122,7 @@ export default function SideBar() {
         <li class="nav-item">
           <a 
             className={
-              isActiveMenuItem(["/Questionnaires","/Questions","/Add-Questionnaire","/Add-Question","/Update-Questionnaire","/Update-Question"])
+              isActiveMenuItem(["/Questionnaires","/Questions","/Add-Questionnaire","/Add-Tag","/Update-Questionnaire","/Update-Tag"])
                 ? "nav-link"
                 : "nav-link collapsed"
             }
@@ -91,7 +135,7 @@ export default function SideBar() {
           <ul 
             id="components-nav" 
             className={`nav-content collapse ${
-              isActiveMenuItem(["/Questionnaires","/Questions","/Add-Questionnaire","/Add-Question","/Update-Questionnaire","/Update-Question"]) ? "show" : ""
+              isActiveMenuItem(["/Questionnaires","/Questions","/Add-Questionnaire","/Add-Tag","/Update-Questionnaire","/Update-Tag"]) ? "show" : ""
             }`}
             data-bs-parent="#sidebar-nav"
           >
@@ -105,18 +149,20 @@ export default function SideBar() {
             </li>
             <li>
               <Link 
-                className={isActiveMenuItem(["/Questions","/Add-Question","/Update-Question"]) ? "active" : ""}
+                className={isActiveMenuItem(["/Questions","/Add-Tag","/Update-Tag"]) ? "active" : ""}
                 to="/Questions"
               >
                 <i class="bi bi-circle"></i><span>Questions</span>
               </Link>
             </li>            
           </ul>
-        </li>    
+        </li>
+        {currentuser.user_type == "Admin" ?
+        <>
         <li class="nav-item">
           <a 
           className={
-            isActiveMenuItem(["/Teachers"])
+            isActiveMenuItem(["/Teachers", "/Learners"])
               ? "nav-link"
               : "nav-link collapsed"
           }
@@ -125,18 +171,16 @@ export default function SideBar() {
           </a>
           <ul id="icons-nav"
             className={`nav-content collapse ${
-              isActiveMenuItem(["/Teacher"]) ? "show" : ""
+              isActiveMenuItem(["/Teacher", "/Learners"]) ? "show" : ""
             }`}
             data-bs-parent="#sidebar-nav">
             <li>
-              <a href="#">
-                <i class="bi bi-circle"></i><span>Basic Users</span>
-              </a>
-            </li>
-            <li>
-              <a href="#">
+              <Link
+                className={isActiveMenuItem(["/Learners"]) ? "active" : ""}
+                to="/Learners"
+              >
                 <i class="bi bi-circle"></i><span>Learners</span>
-              </a>
+              </Link>
             </li>
             <li>
               <Link
@@ -160,7 +204,9 @@ export default function SideBar() {
             <i class="bi bi-cart-check"></i>
             <span>Subscriptions</span>
           </Link>
-        </li>                  
+        </li>
+        </>
+        : "" }
         <li class="nav-item">
               <Link className={
                   isActiveMenuItem(["/Profile"])
@@ -176,11 +222,11 @@ export default function SideBar() {
         <li class="nav-item">
           <Link
             className={
-              isActiveMenuItem(["/Users","/New-User","/Update-User"])
+              isActiveMenuItem(["/Chat"])
                 ? "nav-link"
                 : "nav-link collapsed"
             }
-            to="/Users"
+            to="/Chat"
           >
             <i class="fa fa-comments-o"></i>
             <span>Chat</span>

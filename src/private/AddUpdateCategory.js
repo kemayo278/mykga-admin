@@ -106,9 +106,11 @@ export default function AddUpdateCategory() {
     if (!category_description || category_description.trim() === "") {
       errors.category_description  = "Category Description is required";
     }
-    if (!fileimg) {
-      errors.fileimg  = "Category Image is required";
-    }    
+    if (!category_id) {
+      if (!fileimg) {
+        errors.fileimg  = "Category Image is required";
+      } 
+    }   
     return errors;                
   }
   

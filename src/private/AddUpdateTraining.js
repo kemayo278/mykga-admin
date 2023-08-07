@@ -6,7 +6,7 @@ import { db, storage } from "../firebase-config";
 import { useParams } from "react-router-dom";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 
-const initialState = { training_state :"waiting_for" ,training_name : "", training_price : "", training_category : "", training_teacher : "", training_cote : "", training_description : "", training_acronym : "", training_link : "", training_modulenumber : "", training_lessonnumber : ""}
+const initialState = { training_state :"waiting_for" ,training_name : "", training_price : "", training_nbhour : "", training_category : "", training_teacher : "", training_cote : 0, training_description : "", training_acronym : "", training_link : "", training_modulenumber : "", training_lessonnumber : ""}
 
 export default function AddUpdateTraining() {
 
@@ -22,7 +22,7 @@ export default function AddUpdateTraining() {
 
   const [success,setSucces] = useState("");
 
-  const {training_name , training_price , training_category , training_teacher , training_cote , training_description, training_acronym, training_link , training_modulenumber , training_lessonnumber } = datatraining;
+  const {training_name , training_price, training_nbhour , training_category , training_teacher , training_cote , training_description, training_acronym, training_link , training_modulenumber , training_lessonnumber } = datatraining;
 
   const [fileimg,setFileImg] = useState(null);
 
@@ -180,7 +180,7 @@ export default function AddUpdateTraining() {
     };
     const fetchUser = async () => {
       try {
-        const unsubscribe = onSnapshot(collection(db, "users"), (snapShot) => {
+        const unsubscribe = onSnapshot(query(collection(db, "users"), where("user_type", "==", "Teacher")), (snapShot) => {
           let list = [];
           snapShot.docs.forEach((doc) => {
             list.push({ user_doc_id: doc.id, ...doc.data() });
@@ -210,6 +210,11 @@ export default function AddUpdateTraining() {
     } else if (!/^\d+$/.test(training_price)) {
         errors.training_price = "Training Price must contain only digits";
     }
+    if (!training_nbhour || training_nbhour.trim() === "") {
+      errors.training_price = "Training Hour is required";
+    } else if (!/^\d+$/.test(training_nbhour)) {
+        errors.training_price = "Training Hour must contain only digits";
+    }   
     if (!training_category || training_category.trim() === "") { errors.training_category  = "Training Category is required";}
     if (!training_teacher || training_teacher.trim() === "") { errors.training_teacher  = "Training Teacher is required";}
     if (!training_cote || training_cote.trim() === "") { errors.training_cote  = "Training Cote is required";}
@@ -218,8 +223,11 @@ export default function AddUpdateTraining() {
     if (!training_link || training_link.trim() === "") { errors.training_link  = "Training Link Number is required";}
     if (!training_modulenumber || training_modulenumber.trim() === "") { errors.training_modulenumber  = "Training Module Number is required";}
     if (!training_lessonnumber || training_lessonnumber.trim() === "") { errors.training_lessonnumber  = "Training Lesson Number is required";}
-    // if (!fileimg) { errors.fileimg  = "Hero Image is required";}
-    // if (!filevideo) { errors.filevideo  = "Descriptive Video is required";}
+
+    if (!training_id) {
+      if (!fileimg) { errors.fileimg  = "Hero Image is required";}
+      if (!filevideo) { errors.filevideo  = "Descriptive Video is required";}
+    }
     return errors;                
   }
   
@@ -278,8 +286,6 @@ export default function AddUpdateTraining() {
     setLoadingSubmitButton(false);
   }
 
-  console.log(training_id);
-
   return (
     <div>
       <NavBar />
@@ -313,7 +319,7 @@ export default function AddUpdateTraining() {
                         { errors.error }
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>: null}  
-                    <div class="col-12">
+                    <div class="col-6">
                         <label class="form-label ">Name</label>
                         <input type="text" value={training_name} disabled={loadinginput ? 'disabled' : ''} onChange={handleChange} class="form-control padding-10" name="training_name"/>
                         {errors.training_name ? <span className="text-danger">{errors.training_name}</span> : null}
@@ -327,6 +333,14 @@ export default function AddUpdateTraining() {
                             <span class="input-group-text">.00</span>
                         </div>
                         {errors.training_price ? <span className="text-danger">{errors.training_price}</span> : null}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Hour Number</label>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">Number</span>
+                            <input type="text" value={training_nbhour} disabled={loadinginput ? 'disabled' : ''} onChange={handleChange} class="form-control" name="training_nbhour" style={{padding : "10px"}}/>
+                        </div>
+                        {errors.training_nbhour ? <span className="text-danger">{errors.training_nbhour}</span> : null}
                     </div>
                     <div class="col-6">
                         <label class="form-label">Category</label>
@@ -360,7 +374,7 @@ export default function AddUpdateTraining() {
                         <label class="form-label">Cote Number</label>
                         <div class="input-group mb-3">
                             <span class="input-group-text">Cote</span>
-                            <input disabled={loadinginput ? 'disabled' : ''} type="text" value={training_cote} onChange={handleChange} class="form-control" name="training_cote" style={{padding : "10px"}}/>
+                            <input disabled={loadinginput ? 'disabled' : ''} type="number" value={training_cote} onChange={handleChange} class="form-control" name="training_cote" style={{padding : "10px"}}/>
                         </div>
                         {errors.training_cote ? <span className="text-danger">{errors.training_cote}</span> : null}
                     </div>                                     

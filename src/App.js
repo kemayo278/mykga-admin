@@ -23,6 +23,8 @@ import AddUpdateQuestion from "./private/AddUpdateQuestion";
 import ModuleView from "./private/ModuleView";
 import Teacher from "./private/Teacher";
 import Subscription from "./private/Subscription";
+import Chat from "./private/Chat";
+import Learner from "./private/Learner";
 
 function App() {
   const {currentUser} = useContext(AuthContext);
@@ -77,12 +79,15 @@ function App() {
         <Route path="/Update-Questionnaire/:questionnaire_id" element={<RequireAuth><AddUpdateQuestionnaire/></RequireAuth>} />
 
         <Route path="/Questions" element={<RequireAuth><Question/></RequireAuth>}></Route>
-        <Route path="/Add-Question" element={<RequireAuth><AddUpdateQuestion/></RequireAuth>} />
-        <Route path="/Update-Question/:question_id" element={<RequireAuth><AddUpdateQuestion/></RequireAuth>} />
+        <Route path="/Add-Tag" element={<RequireAuth><AddUpdateQuestion/></RequireAuth>} />
+        <Route path="/Update-Tag/:question_id" element={<RequireAuth><AddUpdateQuestion/></RequireAuth>} />
 
         <Route path="/Teachers" element={<RequireAuth><Teacher/></RequireAuth>}></Route>
+        <Route path="/Learners" element={<RequireAuth><Learner/></RequireAuth>}></Route>
 
         <Route path="/Subscriptions" element={<RequireAuth><Subscription/></RequireAuth>}></Route>
+
+        <Route path="/Chat" element={<RequireAuth><Chat/></RequireAuth>}></Route>
                
         <Route path="/404-NotFound" element={<PageNotFound/>} />
         <Route path="/Profile" element={<Profile/>} />

@@ -14,12 +14,27 @@ export default function Module() {
 
   const [modules, setModules] = useState([]);
 
+  const [filteredModules, setFilteredModules] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const filtered = modules.filter((module) =>
+      module.training.training_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredModules(filtered);
+  }, [modules, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
   useEffect(() => {
     const fetchModules = async () => {
       setLoadingSkeletonButton(true);
       try {
         const unsubscribeModules = onSnapshot(
-          collection(db, "modules"),
+          query(collection(db, "modules"), orderBy("timeStamp", "desc")),
           async (modulesSnapshot) => {
             const trainingSnapshot = await getDocs(collection(db, "trainings"));
   
@@ -68,7 +83,7 @@ export default function Module() {
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch} />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
@@ -85,7 +100,7 @@ export default function Module() {
       <section class="section dashboard">
           <div class="row">
             <div class="col-lg-12">
-              <div class="card" style={{ height: "77vh" }}>
+              <div class="card" style={{ height: "77vh", overflowY : "scroll",scrollBehavior : "inherit" }}>
                 <div class="card-body">
                   <div className="row">
                     <div className="col-md-6">
@@ -107,7 +122,7 @@ export default function Module() {
                           Module name
                         </th>                        
                         <th className="p-3 text-size-17 bg-cfcfcf" scope="col" style={{backgroundColor: "#cfcfcf",}}>
-                          Module Pdf
+                          File
                         </th>
                         <th className="p-3 text-size-17 bg-cfcfcf" scope="col" style={{backgroundColor: "#cfcfcf",}}>
                             Training
@@ -127,13 +142,13 @@ export default function Module() {
                     
                     {loadingskeletonbutton ? <>{SkeletonTable(7,8)}</>:
                         <>
-                            {modules && modules.map((module) => (
+                            {filteredModules && filteredModules.map((module) => (
                                 <tr>
                                     <td className="vertical-align-middle">{module.module_id}</td>
                                     <td className="vertical-align-middle">{module.module_name}</td>
                                     <td className="vertical-align-middle">
                                         <Link to={`/View-Module/${module.module_id}`}>
-                                            <span style={{ padding: "10px" }} class="badge bg-info text-dark"><i class="fa fa-eye"></i> See pdf</span>
+                                            <span style={{ padding: "10px" }} class="badge bg-info text-dark"><i class="fa fa-eye"></i> See</span>
                                         </Link>
                                     </td>
                                     <td className="vertical-align-middle">{module.training.training_name}</td>

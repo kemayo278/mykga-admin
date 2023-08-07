@@ -14,6 +14,42 @@ export default function Training() {
 
   const [trainings, setTrainings] = useState([]);
 
+  const [filteredTrainings, setFilteredTrainings] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const filtered = trainings.filter((training) =>
+      training.training_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredTrainings(filtered);
+  }, [trainings, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
+  const customSort = (a, b) => {
+    const nameA = a.name.toLowerCase();
+    const nameB = b.name.toLowerCase();
+    const descriptionA = a.description.toLowerCase();
+    const descriptionB = b.description.toLowerCase();
+
+    if (nameA.includes(searchTerm) && !nameB.includes(searchTerm)) {
+      return -1;
+    } else if (!nameA.includes(searchTerm) && nameB.includes(searchTerm)) {
+      return 1;
+    }
+
+    if (descriptionA.includes(searchTerm) && !descriptionB.includes(searchTerm)) {
+      return -1;
+    } else if (!descriptionA.includes(searchTerm) && descriptionB.includes(searchTerm)) {
+      return 1;
+    }
+
+    return 0;
+  };
+
   useEffect(() => {
     const fetchTrainings = async () => {
       setLoadingSkeletonButton(true);
@@ -98,7 +134,7 @@ export default function Training() {
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch} />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
@@ -115,7 +151,7 @@ export default function Training() {
       <section class="section dashboard">
           <div class="row">
             <div class="col-lg-12">
-              <div class="card" style={{ height: "77vh" }}>
+              <div class="card" style={{ height: "77vh", overflowY : "scroll",scrollBehavior : "inherit" }}>
                 <div class="card-body">
                   <div className="row">
                     <div className="col-md-6">
@@ -159,7 +195,7 @@ export default function Training() {
                     <tbody>
                       {loadingskeletonbutton ? <>{SkeletonTable(7,8)}</>:
                         <>
-                          {trainings && trainings.map((training) => {
+                          {filteredTrainings && filteredTrainings.map((training) => {
                             let classState = "";
                             let contentState = "";
                             if (training.training_state === "asset") {classState = "bg-info text-white";contentState = "Enable";} 
@@ -169,13 +205,13 @@ export default function Training() {
                               <tr>
                                   <td className="vertical-align-middle">
                                     <Link to={training.training_img}>
-                                      <img src={training.training_img} style={{ height: "50px", width: "50px" }} />
+                                      <img src={training.training_img} style={{ height: "50px", width: "50px", borderRadius: "10px" }} />
                                     </Link>
                                   </td>
-                                  <td className="vertical-align-middle">{training.training_name}</td>
-                                  <td title={training.training_id} className="vertical-align-middle cursor-pointer">{(training.category.category_name)}</td>
+                                  <td title={training.training_name}  className="vertical-align-middle cursor-pointer">{training.training_name}</td>
+                                  <td title={training.category.category_name} className="vertical-align-middle cursor-pointer">{(training.category.category_name)}</td>
                                   <td className="vertical-align-middle"><span style={{ padding: "10px" }} className={`badge rounded-pill ${classState}`}>{contentState}</span></td>
-                                  <td className="vertical-align-middle">{training.training_price} FCFA</td>
+                                  <td className="vertical-align-middle">{training.training_price} XFA</td>
                                   <td className="vertical-align-middle">
                                       <Link to={`/Update-Training/${training.training_id}`} className="btn btn-outline-warning" style={{ borderRadius: "5px", padding: "5px" }}>Update</Link>
                                   </td>

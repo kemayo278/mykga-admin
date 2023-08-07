@@ -3,17 +3,39 @@ import Footer from '../components/Footer'
 import NavBar from '../components/NavBar'
 import SideBar from '../components/SideBar'
 import { Link } from 'react-router-dom'
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
 import { db } from '../firebase-config'
 import SkeletonTable from '../components/SkeletonTable'
 import Swal from 'sweetalert2'
 import Sample_User from "../Sample_User_Icon.png"
+import { Button, Modal } from 'react-bootstrap';
 
 export default function Subscription() {
 
   const [loadingskeletonbutton, setLoadingSkeletonButton] = useState(false);
 
   const [subscriptions, setSubscriptions] = useState([]);
+
+  const [showModal, setShowModal] = useState(false);
+
+  const [selectedSubscription, setSelectedSubscription] = useState([]);
+
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const [filteredSubscriptions, setFilteredSubscriptions] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const filtered = subscriptions.filter((subscription) =>
+      subscription.order_id_transaction.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredSubscriptions(filtered);
+  }, [subscriptions, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -72,7 +94,9 @@ export default function Subscription() {
       };
   
       changeStateNotifications() && fetchOrders();
-  }, []);  
+  }, []);
+  
+  console.log(subscriptions);
 
   const ChangeStatesubscriptionToDisable  = async(id,user_state,userId) => {
     Swal.fire({
@@ -190,28 +214,69 @@ export default function Subscription() {
   
     return formattedDatetime;
   }
+
+  const handleModalOpen = async (userId,orderId) => {
+    try {
+
+      const chatRef = collection(db, 'carts');
+      const querySnapshot = await getDocs(query(chatRef, where('cart_order', '==', orderId), where('cart_user', '==', userId)));
+      
+      let subscriptionsList = [];
+      for (const docSnap of querySnapshot.docs) {
+        const cartData = docSnap.data();
+        const trainingId = cartData.cart_training;
+
+        const trainingDocRef = doc(db, "trainings", trainingId);
+        const trainingDocSnap = await getDoc(trainingDocRef);
+
+        if (trainingDocSnap.exists()) {
+          const trainingData = trainingDocSnap.data();
+          subscriptionsList.push({ ...cartData, training: trainingData });
+        }
+      }
+
+      if (subscriptionsList.length > 0) {
+        setSelectedSubscription(subscriptionsList);
+      }
+      
+      const userRef = doc(db, 'users', userId);
+      const userSnapshot = await getDoc(userRef);
+      if (userSnapshot.exists()) {
+        setSelectedUser({ user_id : userSnapshot.id, ...userSnapshot.data() });
+      }
+
+      setShowModal(true);
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowModal(false);
+  };
   
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch} />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
-        <h1>List Of Subscriptions</h1>
+        <h1>List Of Suscriptions</h1>
         <nav>
           <ol class="breadcrumb">
             <li class="breadcrumb-item">
               <a>Home</a>
             </li>
-            <li class="breadcrumb-item active">Subscriptions</li>
+            <li class="breadcrumb-item active">Suscriptions</li>
           </ol>
         </nav>
       </div>
       <section class="section dashboard">
           <div class="row">
             <div class="col-lg-12">
-              <div class="card" style={{ height: "77vh" }}>
+              <div class="card" style={{ height: "77vh", overflowY : "scroll",scrollBehavior : "inherit" }}>
                 <div class="card-body">
                   <div className="row">
                   </div>
@@ -251,7 +316,7 @@ export default function Subscription() {
                     <tbody>
                     {loadingskeletonbutton ? <>{SkeletonTable(7,9)}</>:
                     <>
-                      {subscriptions && subscriptions.map((subscription) => {
+                      {filteredSubscriptions && filteredSubscriptions.map((subscription) => {
                         let classState = "";
                         let contentState = "";
                         if (subscription.order_state === "asset") {classState = "bg-info text-dark";contentState = "Enable";} 
@@ -267,7 +332,7 @@ export default function Subscription() {
                                     <td className="vertical-align-middle">{formatAmount(subscription.order_amout_transaction)} XFA</td>
                                     <td className="vertical-align-middle">{convertTimestampToDatetime(subscription.order_timeStamp)}</td>
                                     <td className="vertical-align-middle">
-                                        <a onClick={() => ChangeStatesubscriptionToEnable(subscription.order_id,subscription.order_state,subscription.cartData.cart_user)} className="btn btn-outline-primary" style={{ borderRadius: "5px", padding: "5px" }}><i className='bi bi-eye-fill'></i> View</a>
+                                        <a onClick={() => handleModalOpen(subscription.cartData.cart_user,subscription.order_id)} className="btn btn-outline-primary" style={{ borderRadius: "5px", padding: "5px" }}><i className='bi bi-eye-fill'></i> View</a>
                                     </td>
                                     <td className="vertical-align-middle">
                                         <a onClick={() => ChangeStatesubscriptionToEnable(subscription.order_id,subscription.order_state,subscription.cartData.cart_user)} className="btn btn-outline-info" style={{ borderRadius: "5px", padding: "5px" }}>Enable</a>
@@ -286,6 +351,57 @@ export default function Subscription() {
               </div>
             </div>
           </div>
+          <Modal show={showModal} onHide={handleModalClose}>
+            <Modal.Header closeButton>
+              <Modal.Title>Detail Subscription</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p style={{ fontSize : "22px", fontWeight : "bold", color : "grey" }}>
+                  Details Cart
+                </p>
+                <p>
+                  <div style={{ paddingLeft : "15px" }}>
+                    {selectedSubscription && selectedSubscription.map((Training) => {
+                      return (
+                      <>
+                        <li>
+                          <span>{Training.training.training_name} : {Training.training.training_price} XFA</span>
+                        </li><br/>
+                      </>
+                    )
+                    })}
+                  </div>
+                </p>
+                <hr/>
+                <p style={{ fontSize : "22px", fontWeight : "bold", color : "grey" }}>
+                  Details Learner
+                </p>
+                <p>
+                  <div style={{ paddingLeft : "15px" }}>
+                    {selectedUser ? (
+                    <>
+                      <li>
+                        <span>Ful name :</span> {selectedUser.user_fulname}
+                      </li><br/>
+                      <li>
+                        <span>Email :</span> {selectedUser.user_email}
+                      </li><br/>
+                      <li>
+                        <span>Phone :</span> {selectedUser.user_phone}
+                      </li><br/>
+                    </>
+                    ) : (
+                      <p>Loading...</p>
+                    )}
+                  </div>
+                </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <button className='btn btn-md btn-light' variant="secondary" onClick={handleModalClose}>
+                  Close
+              </button>
+            </Modal.Footer>
+          </Modal>
         </section>
     </main>
     <Footer />

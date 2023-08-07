@@ -81,11 +81,11 @@ export default function Profile() {
           if (currentuserFulname.length > 10 ) {
             currentuserFulname = currentuserFulname.substr(0, 11);
           }
-          if(!currentuserImg || currentuserImg === ""){
-            let fileurl = "https://kokitechgroup.cm/Admin/images/avatars/760f.png";
+          if(!currentuserImg || currentuserImg === "" || currentuserImg === "null"){
+            let fileurl = "https://kokitechgroup.cm/iconuser.png";
             currentuserImg = fileurl;
           }
-          if(!currentuserAbout || currentuserAbout === ""){
+          if(!currentuserAbout || currentuserAbout === "" || currentuserAbout === "null"){
             let about = "Sunt est soluta temporibus accusantium neque nam maiores cumque temporibus. Tempora libero non est unde veniam est qui dolor. Ut sunt iure rerum quae quisquam autem eveniet perspiciatis odit. Fuga sequi sed ea saepe at unde.";
             currentuserAbout = about;
           }          
@@ -99,6 +99,7 @@ export default function Profile() {
     };
     currentUser.uid && fetchCurrentUser();
   }, [currentUser.uid]);
+
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -202,6 +203,7 @@ export default function Profile() {
           });
           setSuccessUser("Informations Updated success !!");
           setLoadingSubmitUser(false);
+          setProgressFileImg(null);
           setTimeout(() => { setSuccessUser('');}, 3000);
           setErrors(errors);
           navigate("/Profile")
@@ -225,6 +227,7 @@ export default function Profile() {
           });
           setSuccessUser("Informations Updated success !!");
           setLoadingSubmitUser(false);
+          setProgressFileImg(null);
           setTimeout(() => { setSuccessUser('');}, 3000);
           setErrors(errors);
         } catch (error) {
@@ -408,9 +411,11 @@ export default function Profile() {
                   <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-edit">Edit Profile</button>
                 </li>
 
+                { currentuser.user_type == "Admin" ?
                 <li class="nav-item">
                   <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings">Settings</button>
-                </li>                
+                </li>
+                : ""}
 
                 <li class="nav-item">
                   <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-change-password">Change Password</button>

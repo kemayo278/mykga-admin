@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import NavBar from "../components/NavBar";
 import SideBar from "../components/SideBar";
-import { addDoc, collection, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, and, collection, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { db, storage } from "../firebase-config";
 import { useParams } from "react-router-dom";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import Swal from "sweetalert2";
 
-const initialState = {module_name : "", module_position : "", module_training : "", module_pdf : ""}
+const initialState = {module_name : "", module_position : "", module_training : "", module_pdf : "", module_video : ""}
 
 export default function AddUpdateModule() {
 
@@ -22,7 +23,7 @@ export default function AddUpdateModule() {
 
   const [success,setSucces] = useState("");
 
-  const {module_name, module_position, module_training, module_pdf } = datamodule;
+  const {module_name, module_position, module_training, module_pdf, module_video } = datamodule;
 
   const [fileimg,setFileImg] = useState(null);
 
@@ -52,15 +53,27 @@ export default function AddUpdateModule() {
 
   useEffect(() => {
     const uploadFileImg = () => {
-      const allowedFileImgTypes = ["application/pdf"]; // Types de fichiers autorisés
-      const name = new Date().getTime() + fileimg.name;
+      const allowedFileImgTypes = ["application/pdf","video/mp4", "video/quicktime","video/avi"]; // Types de fichiers autorisés
+      // const name = new Date().getTime() + fileimg.name;
+      const name = fileimg.name;
+      const fileSize = fileimg.size;
+      const fileType = fileimg.type;
       const storageRef = ref(storage, name);
   
-      // Vérifier si le type de fichier est autorisé
       if (!allowedFileImgTypes.includes(fileimg.type)) {
-        errors.error_img = "Image type not allowed";
+        errors.error_img = "File type not allowed";
+        Swal.fire({position: 'center',icon: 'error', title: 'File type not allowed',text: '"File pdf, File mp4,File quicktime and File avi is authorized',showConfirmButton: true})
         setProgressFileImg(null);
         setErrors(errors)
+        return;
+      }
+
+      const maxFileSize = 50 * 1024 * 1024; // 10 Mo en bytes
+      if (fileSize > maxFileSize) {
+        errors.error_img = "File size exceeds the limit (50 MB)";
+        Swal.fire({ position: 'center',icon: 'error',title: 'Error!',text: 'File size exceeds the limit (10 MB)',showConfirmButton: true});
+        setProgressFileImg(null);
+        setErrors(errors);
         return;
       }
   
@@ -88,7 +101,11 @@ export default function AddUpdateModule() {
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             console.log("INSERT IMAGE SUCCESS ");
-            setDataModule((prev) => ({ ...prev, module_pdf: downloadURL }));
+            if (fileType == "application/pdf") {
+              setDataModule((prev) => ({ ...prev, module_pdf: downloadURL, module_video: "" })); 
+            }else{
+              setDataModule((prev) => ({ ...prev, module_pdf: "", module_video: downloadURL }));
+            }
             setErrors(errors);
           });
         }
@@ -129,6 +146,7 @@ export default function AddUpdateModule() {
   const validate = () => {
     let errors = {};
     if (!module_name || module_name.trim() === "") { errors.module_name  = "Module Name is required";}
+    if ((!module_pdf && !module_video) || (!module_pdf.trim() === ""  && !module_video.trim() === "")) { errors.file  = "File is required";}
     if (!module_position || module_position.trim() === "") {
         errors.module_position = "Module Position is required";
     } else if (!/^\d+$/.test(module_position)) {
@@ -249,11 +267,12 @@ export default function AddUpdateModule() {
                         {errors.module_training ? <span className="text-danger">{errors.module_training}</span> : null}
                     </div>                                      
                     <div class="col-12">
-                        <label class="form-label ">Pdf</label>
+                        <label class="form-label ">File</label>
                         <input type="file" disabled={loadinginput ? 'disabled' : ''} onChange={(e) => setFileImg(e.target.files[0])} class="form-control padding-10"/>
                         {progressfileimg ? <div class="progress"> <div class="progress-bar" role="progressbar" style={{width: `${progressfileimg}%` }} aria-valuemin="0" aria-valuemax="100">Uplaod {progressfileimg}%</div></div> : null}
                         {errors.fileimg ? <span className="text-danger">{errors.fileimg}</span> : null}
                         {errors.error_img ? <span className="text-danger">{errors.error_img}</span> : null}
+                        {errors.file ? <span className="text-danger">{errors.file}</span> : null}
                     </div>                                                       
                     <div class="text-center">
                       <button type="submit" onClick={handleAddModule} class="btn btn-primary" style={{borderRadius: "5px",padding: "7px"}}>

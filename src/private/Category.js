@@ -14,6 +14,22 @@ export default function Category() {
 
   const [categories, setCategories] = useState([]);
 
+  const [filteredCategories, setFilteredCategories] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    // Filtrer les catégories en fonction du terme de recherche
+    const filtered = categories.filter((category) =>
+      category.category_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredCategories(filtered);
+  }, [categories, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
   useEffect(() => {
     const fetchCategory = async () => {
         setLoadingSkeletonButton(true);
@@ -40,8 +56,6 @@ export default function Category() {
         } catch (error) {
           setLoadingSkeletonButton(true);
         }
-        
-        
     };
     fetchCategory();
   }, []);
@@ -64,7 +78,7 @@ export default function Category() {
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch}  />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
@@ -81,7 +95,7 @@ export default function Category() {
       <section class="section dashboard">
           <div class="row">
             <div class="col-lg-12">
-              <div class="card" style={{ height: "77vh" }}>
+              <div class="card" style={{ height: "77vh", overflowY : "scroll",scrollBehavior : "inherit" }}>
                 <div class="card-body">
                   <div className="row">
                     <div className="col-md-6">
@@ -114,7 +128,7 @@ export default function Category() {
                       </tr>
                     </thead>
                     <tbody>
-                    {categories && categories.map((category) => (
+                    {filteredCategories && filteredCategories.map((category) => (
                         <tr>
                             <td className="vertical-align-middle">
                               <Link to={category.category_img}>

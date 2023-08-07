@@ -4,6 +4,7 @@ import SideBar from "../components/SideBar";
 import { useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase-config";
+import YouTube from 'react-youtube';
 
 export default function ViewTraining() {
   const { training_id } = useParams();
@@ -39,8 +40,29 @@ export default function ViewTraining() {
                   category_id: categorySnapshot.id,
                   ...categorySnapshot.data(),
                 };
-                setDataTraining({ ...trainingData, category: categoryData });
-                setLoading(true);
+
+                if (trainingData.training_teacher) {
+                  const teacherRef = doc(
+                    db,
+                    "users",
+                    trainingData.training_teacher
+                  );
+                  const teacherSnapshot = await getDoc(teacherRef);
+    
+                  if (teacherSnapshot.exists()) {
+                    const teacherData = {
+                      teacher_id: teacherSnapshot.id,
+                      ...teacherSnapshot.data(),
+                    };
+                    setDataTraining({ ...trainingData, category: categoryData, teacher : teacherData });
+                    setLoading(false);
+                  } else {
+                    console.log("error teacher");
+                    setDataTraining(trainingData);
+                  }
+                } else {
+                  setDataTraining(trainingData);
+                }
               } else {
                 console.log("La catégorie associée n'existe pas");
                 setDataTraining(trainingData);
@@ -48,6 +70,7 @@ export default function ViewTraining() {
             } else {
               setDataTraining(trainingData);
             }
+
           } else {
             console.log("Ce document n'existe pas");
           }
@@ -62,14 +85,40 @@ export default function ViewTraining() {
   }, [training_id]);
 
   console.log(datatraining);
+
+  function convertTimestampToDatetime(timestamp) {
+    const date = timestamp.toDate();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const formattedDatetime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  
+    return formattedDatetime;
+  }
+
+  const opts = {
+    playerVars: {
+      autoplay: 1, // Lecture automatique
+      controls: 1, // Afficher les contrôles de lecture
+    },
+  };
+
+  // Fonction de rappel lorsque le lecteur est prêt
+  const onReady = (event) => {
+    event.target.playVideo(); // Démarrer la lecture automatique
+  };
   
 
   return (
     <>
       <NavBar />
       <SideBar />
-      {loading ? (
-        <>
+      {loading ? null :
+        (
+          <>
           <main id="main" class="main">
             <div class="pagetitle">
               <h1>
@@ -94,6 +143,7 @@ export default function ViewTraining() {
                         <img
                           src={datatraining.training_img}
                           class="img-fluid rounded-start"
+                          style={{ height : "70vh", objectFit : "cover" }}
                         />
                       </div>
                     </div>
@@ -109,14 +159,14 @@ export default function ViewTraining() {
                   <div class="card">
                     <div class="card-body">
                       <h5 class="card-title">Category</h5>
-                      {/* {datatraining} */}
-                      Categpr shjjh
+                      {/* {loading ? "aaaa" :datatraining.category.category_name} */}
                     </div>
                   </div>
                   <div class="card">
                     <div class="card-body">
                       <h5 class="card-title">Teacher</h5>
-                      KEMAYO DENIS JUNIOR
+                      {/* KEMAYO DENIS JUNIOR */}
+                      {/* {datatraining.teacher.user_fulname} */}
                     </div>
                   </div>
                 </div>
@@ -160,8 +210,7 @@ export default function ViewTraining() {
                   <div class="card">
                     <div class="card-body">
                       <h5 class="card-title">Created At</h5>
-                      {/* {datatraining.timeStamp} */}
-                      12-Juin-2023
+                      {/* {convertTimestampToDatetime(datatraining.timeStamp)} */}
                     </div>
                   </div>
                 </div>
@@ -174,10 +223,25 @@ export default function ViewTraining() {
                   </div>
                 </div>
               </div>
+
+              <div class="row align-items-top">
+                <div className="col-12">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">Descriptive Video</h5>
+                      <video controls autoPlay>
+                        <source src="https://youtu.be/w-saXw0UQjQ?list=PL4GFqtclxpXJQjJKDyi29kB-cttnLAr8D" type="video/mp4" />
+                        Votre navigateur ne supporte pas la lecture de vidéos HTML5.
+                      </video>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </section>
           </main>
         </>
-      ) : null}
+        )
+      }
     </>
   );
 }

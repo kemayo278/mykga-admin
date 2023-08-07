@@ -14,6 +14,21 @@ export default function Questionnaire() {
 
   const [questionnaires, setQuestionnaires] = useState([]);
 
+  const [filteredQuestionnaires, setFilteredQuestionnaires] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const filtered = questionnaires.filter((questionnaire) =>
+      questionnaire.questionnaire_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredQuestionnaires(filtered);
+  }, [questionnaires, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
   useEffect(() => {
     const fetchQuestionnaires = async () => {
       setLoadingSkeletonButton(true);
@@ -105,7 +120,7 @@ export default function Questionnaire() {
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch} />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
@@ -122,7 +137,7 @@ export default function Questionnaire() {
       <section class="section dashboard">
           <div class="row">
             <div class="col-lg-12">
-              <div class="card" style={{ height: "77vh" }}>
+              <div class="card" style={{ height: "77vh", overflowY : "scroll",scrollBehavior : "inherit" }}>
                 <div class="card-body">
                   <div className="row">
                     <div className="col-md-6">
@@ -161,17 +176,18 @@ export default function Questionnaire() {
                       </tr>
                     </thead>
                     <tbody>
-                      {questionnaires && questionnaires.map((questionnaire) => {
+                      {filteredQuestionnaires && filteredQuestionnaires.map((questionnaire) => {
                         let classState = "";
                         let contentState = "";
                         if (questionnaire.questionnaire_state === "asset") {classState = "bg-info text-dark";contentState = "Enable";} 
                         else if (questionnaire.questionnaire_state === "idle") { classState = "bg-danger text-white";contentState = "Disable";}                      
+                        else{ classState = "bg-warning text-white";contentState = "Waiting-For"; }             
                         return (
                           <tr>
                             <td className="vertical-align-middle">{questionnaire.questionnaire_id}</td>
                             <td className="vertical-align-middle">{questionnaire.questionnaire_name}</td>
                             <td className="vertical-align-middle cursor-pointer">{(questionnaire.training.training_name)}</td>
-                            <td className="vertical-align-middle"><span className={`badge rounded-pill ${classState}`}>{contentState}</span></td>
+                            <td className="vertical-align-middle"><span className={`badge rounded-pill ${classState}`} style={{ padding: "10px" }} >{contentState}</span></td>
                             <td className="vertical-align-middle">
                                 <Link to={`/Update-Questionnaire/${questionnaire.questionnaire_id}`} className="btn btn-outline-warning" style={{ borderRadius: "5px", padding: "5px" }}>Update</Link>
                             </td>

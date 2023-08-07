@@ -6,14 +6,27 @@ import { collection, doc, getDoc, getDocs, onSnapshot, orderBy, query, where } f
 import iconuser from "../Sample_User_Icon.png";
 import { signOut } from "firebase/auth";
 
-export default function NavBar() {
+export default function NavBar({ onSearch }) {
+  
     const [isActive , setIsActive] = useState(true);
 
     const {currentUser} = useContext(AuthContext);
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const handleSearch = (event) => {
+      const term = event.target.value;
+      setSearchTerm(term);
+      onSearch(term);
+    };
+
     const [notifications, setNotifications] = useState([]);
 
+    const [messages, setMessages] = useState([]);
+
     const [countnotification, setCountNotification] = useState(0);
+
+    const [countmessage, setCountMessage] = useState(0);
 
     const [currentuser,setCurrentUser] = useState({});
 
@@ -56,7 +69,7 @@ export default function NavBar() {
             if (currentuserFulname.length > 10 ) {
               currentuserFulname = currentuserFulname.substr(0, 11);
             }
-            if(!currentuserImg || currentuserImg === ""){
+            if(!currentuserImg || currentuserImg === "" || currentuserImg === "null"){
               let fileurl = "https://kokitechgroup.cm/iconuser.png";
               currentuserImg = fileurl;
             }
@@ -72,7 +85,7 @@ export default function NavBar() {
       const fetchNotifications = async () => {
         try {
           const unsubscribeNotifications = onSnapshot(
-            query(collection(db, "notifications"), orderBy("notification_timeStamp", "desc"),where("notification_state","==","not_read"),where("notification_location","==","app-web")),
+            query(collection(db, "notifications"),where("notification_state","==","not_read"),where("notification_location","==","app-web"), orderBy("notification_timeStamp", "desc")),
             async (notificationsSnapshot) => {
               const userSnapshot = await getDocs(collection(db, "users"));
     
@@ -99,6 +112,42 @@ export default function NavBar() {
         }
       };
 
+      const fetchMessages = async () => {
+        try {
+          const unsubscribeMessages = onSnapshot(
+            query(collection(db, "notifications"),where("notification_state","==","not_read"),where("notification_location","==","chat-assistance"),where("notification_learner","==",currentUser.uid), orderBy("notification_timeStamp", "desc")),
+            async (notificationsSnapshot) => {
+              const userSnapshot = await getDocs(collection(db, "users"));
+    
+              const notificationsList = notificationsSnapshot.docs.map((doc) => {
+                const notificationData = doc.data();
+                const userId = notificationData.xender;
+                const userData = userSnapshot.docs.find((userDoc) => userDoc.id === userId).data();
+                let notificationContent = notificationData.notification_content;
+
+                if (notificationContent.length > 30 ) {
+                  notificationContent = notificationContent.substr(0, 30);
+                }
+    
+                return {
+                  notification_id : doc.id,
+                  notificationContent : notificationContent,
+                  ...notificationData,
+                  user : userData
+                };
+              });
+              
+              setMessages(notificationsList);
+            }
+          );
+          return () => {
+            unsubscribeMessages();
+          };
+        } catch (error) {
+          console.log(error);
+        }
+      };
+
       const getCountNotifications = async () => {
         try {
           const querySnapshot = query(
@@ -118,7 +167,26 @@ export default function NavBar() {
         }
       };
 
-      currentUser.uid && fetchCurrentUser() && fetchNotifications() && getCountNotifications();
+      const getCountMessages = async () => {
+        try {
+          const querySnapshot = query(
+            collection(db, "notifications"),
+            where("notification_state", "==", "not_read"),where("notification_learner", "==", currentUser.uid),
+            where("notification_location", "==", "chat-assistance")
+          );
+      
+          const unsubscribe = onSnapshot(querySnapshot, (snapshot) => {
+            const totalCountNotification = snapshot.docs.length;
+            setCountMessage(totalCountNotification);
+          });
+      
+          return unsubscribe;
+        } catch (error) {
+          console.error('Erreur lors du comptage des éléments de la collection:', error);
+        }
+      };      
+
+      currentUser.uid && fetchCurrentUser() && fetchMessages() && getCountMessages() && fetchNotifications() && getCountNotifications();
     }, [currentUser.uid]);
 
     function convertTimestampToDatetime(timestamp) {
@@ -133,8 +201,6 @@ export default function NavBar() {
     
       return formattedDatetime;
     }
-
-    console.log(notifications);
 
   return (
     <>
@@ -157,6 +223,8 @@ export default function NavBar() {
             type="text"
             name="query"
             placeholder="Search"
+            value={searchTerm}
+            onChange={handleSearch}
             title="Enter search keyword"
           />
           <button type="submit" title="Search">
@@ -172,13 +240,14 @@ export default function NavBar() {
               <i class="bi bi-search"></i>
             </a>
           </li>
-
+          {currentuser.user_type == "Admin" ?
           <li class="nav-item dropdown">
             <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
               <i class="bi bi-bell"></i>
               {countnotification !== 0 && <span class="badge bg-primary badge-number">{countnotification}</span>}
             </a>
 
+            
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
               <li class="dropdown-header">
               {countnotification !== 0 && <>
@@ -214,98 +283,75 @@ export default function NavBar() {
                   </>
                 );
                })}
+
+               
               <li class="dropdown-footer">
                 <Link to="/Subscriptions">Show all notifications</Link>
               </li>
-              </>}
+
+                </>}
             </ul>
           </li>
+          : "" }
 
           <li class="nav-item dropdown">
             <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
               <i class="bi bi-chat-left-text"></i>
-              <span class="badge bg-success badge-number">3</span>
+              {countmessage !== 0 && <span class="badge bg-success badge-number">{countmessage}</span>}
             </a>
 
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
               <li class="dropdown-header">
-                You have 3 new messages
-                <a href="#">
-                  <span class="badge rounded-pill bg-primary p-2 ms-2">
-                    View all
-                  </span>
-                </a>
+                {countmessage !== 0 && <>
+                  You have {countmessage} new message{countmessage > 1 && <>s</>}
+                  <Link to="/Chat">
+                    <span class="badge rounded-pill bg-primary p-2 ms-2">
+                      View all
+                    </span>
+                  </Link>
+                  </>
+                }
+                {countmessage === 0 && <span style={{ fontWeight: "bold" }}> Aucun Message !! </span>}
               </li>
+
+              {countmessage !== 0 && <>
               <li>
                 <hr class="dropdown-divider" />
               </li>
 
-              <li class="message-item">
-                <a href="#">
-                  <img
-                    src="assets/img/messages-1.jpg"
-                    alt=""
-                    class="rounded-circle"
-                  />
-                  <div>
-                    <h4>Maria Hudson</h4>
-                    <p>
-                      Velit asperiores et ducimus soluta repudiandae labore
-                      officia est ut...
-                    </p>
-                    <p>4 hrs. ago</p>
-                  </div>
-                </a>
-              </li>
+              {messages && messages.map((message) => {
+              return (               
+                <>
+                  <li class="message-item">
+                    <a href="#">
+                      <img
+                        src={message.user.user_img == "" || message.user.user_img == null  ? "https://kokitechgroup.cm/iconuser.png" : message.user.user_img}
+                        style={{ width : "40px", height : "40px", objectFit : "cover" }}
+                        alt=""
+                        class="rounded-circle"
+                      />
+                      <div>
+                        <h4>{message.user.user_fulname}</h4>
+                        <p style={{ fontWeight: "bolder" }}>
+                          {message.notificationContent}
+                        </p>
+                        <p>{convertTimestampToDatetime(message.notification_timeStamp)}</p>
+                      </div>
+                    </a>
+                  </li>
+                  <li>
+                    <hr class="dropdown-divider" />
+                  </li>
+                </>
+                );
+              })}
               <li>
                 <hr class="dropdown-divider" />
               </li>
-
-              <li class="message-item">
-                <a href="#">
-                  <img
-                    src="assets/img/messages-2.jpg"
-                    alt=""
-                    class="rounded-circle"
-                  />
-                  <div>
-                    <h4>Anna Nelson</h4>
-                    <p>
-                      Velit asperiores et ducimus soluta repudiandae labore
-                      officia est ut...
-                    </p>
-                    <p>6 hrs. ago</p>
-                  </div>
-                </a>
-              </li>
-              <li>
-                <hr class="dropdown-divider" />
-              </li>
-
-              <li class="message-item">
-                <a href="#">
-                  <img
-                    src="assets/img/messages-3.jpg"
-                    alt=""
-                    class="rounded-circle"
-                  />
-                  <div>
-                    <h4>David Muldon</h4>
-                    <p>
-                      Velit asperiores et ducimus soluta repudiandae labore
-                      officia est ut...
-                    </p>
-                    <p>8 hrs. ago</p>
-                  </div>
-                </a>
-              </li>
-              <li>
-                <hr class="dropdown-divider" />
-              </li>
-
               <li class="dropdown-footer">
-                <a href="#">Show all messages</a>
+                <Link to="/Chat">Show all messages</Link>
               </li>
+              </>}
             </ul>
           </li>
 

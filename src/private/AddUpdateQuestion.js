@@ -233,7 +233,7 @@ export default function AddUpdateQuestion() {
                     </div>   
                     <div class="col-md-6">
                         <div class="form-floating">
-                            <input type="number" required min="1" max="5" disabled={loadinginput ? 'disabled' : ''} value={question_response} onChange={handleChange} class="form-control text-size-17" name="question_response"/>
+                            <input type="text" required disabled={loadinginput ? 'disabled' : ''} value={question_response} onChange={handleChange} class="form-control text-size-17" name="question_response"/>
                             <label for="floatingName" className="text-size-17">True Choice</label>
                         </div>
                         {errors.question_response ? <span className="text-danger">{errors.question_response}</span> : null}

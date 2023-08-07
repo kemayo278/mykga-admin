@@ -15,6 +15,21 @@ export default function Teacher() {
 
   const [teachers, setTeachers] = useState([]);
 
+  const [filteredTeachers, setFilteredTeachers] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const filtered = teachers.filter((teacher) =>
+      teacher.user_fulname.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredTeachers(filtered);
+  }, [teachers, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
   useEffect(() => {
     const fetchTeacher = async () => {
         setLoadingSkeletonButton(true);
@@ -39,26 +54,10 @@ export default function Teacher() {
     };
     fetchTeacher();
   }, []);
-  
-  const handleDelete = async(id) => {
-    Swal.fire({
-      title: 'Deletion', text: 'Do you want to delete this Category?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33', confirmButtonText: 'Delete', cancelButtonText: 'Cancel'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        try {
-            deleteDoc(doc(db, "teachers", id));
-            setTeachers(teachers.filter((item) => item.id !== id));
-            Swal.fire({position: 'top-right',icon: 'success',title: 'Thanks you!',text: 'Category deleted successfully',showConfirmButton: true})
-          } catch (error) {
-            Swal.fire({position: 'top-right',icon: 'error',title: 'Oops!',text: 'An error occurred while executing the program',showConfirmButton: true,confirmButtonColor: '#3085d6',})
-          }
-      }
-    });
-  };
 
   const ChangeStateTeacherToDisable  = async(id,user_state) => {
     Swal.fire({
-      title: 'Do you want to deactivate this user ?', icon: 'question',showCancelButton: true, confirmButtonColor: '#3085d6',confirmButtonText: 'Enable', cancelButtonText: 'Cancel'
+      title: 'Do you want to deactivate this user ?', icon: 'question',showCancelButton: true, confirmButtonColor: '#3085d6',confirmButtonText: 'Disable', cancelButtonText: 'Cancel'
     }).then((result) => {
       if (result.isConfirmed) {
         if(user_state !== "idle")
@@ -108,7 +107,7 @@ export default function Teacher() {
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch} />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
@@ -162,7 +161,7 @@ export default function Teacher() {
                     <tbody>
                     {loadingskeletonbutton ? <>{SkeletonTable(7,8)}</>:
                     <>
-                      {teachers && teachers.map((teacher) => {
+                      {filteredTeachers && filteredTeachers.map((teacher) => {
                         let classState = "";
                         let contentState = "";
                         if (teacher.user_state === "asset") {classState = "bg-info text-dark";contentState = "Enable";} 

@@ -14,6 +14,21 @@ export default function Question() {
 
   const [questions, setQuestions] = useState([]);
 
+  const [filteredQuestions, setFilteredQuestions] = useState([]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const filtered = questions.filter((question) =>
+      question.questionnaire.questionnaire_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredQuestions(filtered);
+  }, [questions, searchTerm]);
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
+
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoadingSkeletonButton(true);
@@ -78,7 +93,7 @@ export default function Question() {
     
   return (
     <>
-    <NavBar />
+    <NavBar onSearch={handleSearch} />
     <SideBar />
     <main id="main" class="main">
       <div class="pagetitle">
@@ -95,13 +110,13 @@ export default function Question() {
       <section class="section dashboard">
           <div class="row">
             <div class="col-lg-12">
-              <div class="card" style={{ height: "77vh" }}>
+              <div class="card" style={{ height: "77vh", overflowY : "scroll",scrollBehavior : "inherit" }}>
                 <div class="card-body">
                   <div className="row">
                     <div className="col-md-6">
                     </div>
                     <div className="col-md-6">
-                      <Link to= "/Add-Question" style={{borderRadius: "5px",padding: "5px"}} class="btn btn-outline-primary float-right w-80 mt-4" >
+                      <Link to= "/Add-Tag" style={{borderRadius: "5px",padding: "5px"}} class="btn btn-outline-primary float-right w-80 mt-4" >
                         New 
                       </Link>
                     </div>
@@ -131,14 +146,14 @@ export default function Question() {
                       </tr>
                     </thead>
                     <tbody>
-                    {questions && questions.map((question) => (
+                    {filteredQuestions && filteredQuestions.map((question) => (
                         <tr>
                             <td className="vertical-align-middle text-center">{question.question_id}</td>
                             <td title={question.question_description} className="vertical-align-middle cursor-pointer">{(question.questionDescription)}</td>
                             <td className="vertical-align-middle text-center">{question.questionnaire.questionnaire_name}</td>
                             <td className="vertical-align-middle text-center">{question.question_response}</td>
                             <td className="vertical-align-middle">
-                                <Link to={`/Update-Question/${question.question_id}`} className="btn btn-outline-warning" style={{ borderRadius: "5px", padding: "5px" }}>Update</Link>
+                                <Link to={`/Update-Tag/${question.question_id}`} className="btn btn-outline-warning" style={{ borderRadius: "5px", padding: "5px" }}>Update</Link>
                             </td>
                             <td className="vertical-align-middle">
                                 <a onClick={() => handleDelete(question.question_id)} className="btn btn-outline-danger" style={{ borderRadius: "5px", padding: "5px" }}>Delete</a>
